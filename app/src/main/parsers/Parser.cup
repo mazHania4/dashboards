@@ -1,0 +1,141 @@
+package com.compi1.parsers;
+import java_cup.runtime.*;
+import java.util.List;
+import java.util.ArrayList;
+
+class Parser;
+
+parser code {:
+    public Parser(Lexer lex, ComplexSymbolFactory sf) {
+        super(lex,sf);
+    }
+    public void syntax_error(Symbol cur_token) {
+        throw new Error("Syntax error in token '" +symbl_name_from_id(cur_token.sym) + "':'" + cur_token.value
+        +"' at line: " + cur_token.left + ", col:" + cur_token.right);
+    }
+:};
+
+terminal
+// reserved words for control structures
+IF, ELSE, FOR, DO , WHILE,
+// reserved words for graphs and dashboard
+TITTLE, DESCRIPTION, KEYWORDS, HEADER, FOOTER, BG_COLOR, FONT_FAM, FONT_SIZE, DATA, CATEGORY, VALUE, LABEL,
+X, Y, NAME, POINTS, COLOR, SIZE, LINE_STYLE, ICON, LINK, CHART, X_AXIS_LBL, Y_AXIS_LBL, LEGEND_POS,
+// symbols
+COLON, SEMICOLON, COMMA, OP_BRACE, CL_BRACE, OP_BRACKET, CL_BRACKET, OP_PAREN, CL_PAREN,
+PLUS, INCREMENT, MINUS, DECREMENT, MULT, DIV,
+ASSIGN, EQUALS, DIFFERENT, LESS_THAN, LESS_EQUAL_THAN, MORE_THAN, MORE_EQUAL_THAN,
+// values
+STRING, ID, HEX, NUMBER, URL, LEXICAL_ERROR;
+
+nonterminal statements, _statements, statement, global_info, if, opt_else, for, while, dowhile,
+comparison, comparator, operation, atom, _sum, term, _term, factor,
+graph, data_chart, bdl_data, opt_color, opt_size_color, opt_color_line_style, opt_lbl, opt_icon_color_link,
+    bars_data, title_x_y_chart, bar,  cake_data, cake_chart, slice,
+    dots_data, dot,  lines_data, line, point, points,
+    cards_data;
+
+start with statements;
+
+statements ::= statement _statements global_info; //agregar las graficas  e info al resultado global
+_statements ::= statement _statements // devolver listado de graficas
+    | ;
+
+statement ::= operation SEMICOLON // se ejecuta, tipo actualizar tabla de simbolos y devuelve un listado vacio
+ // los siguientes devuelven un listado de graficas (puede estar vacio)
+    | graph
+    | if
+    | for
+    | while
+    | dowhile;
+
+if ::= IF OP_PAREN comparison CL_PAREN OP_BRACE _statements CL_BRACE opt_else;
+opt_else ::= ELSE OP_BRACE _statements CL_BRACKET
+    | ;
+
+for ::= FOR OP_PAREN operation SEMICOLON comparison SEMICOLON operation CL_PAREN OP_BRACE _statements CL_BRACE;
+
+while ::= WHILE OP_PAREN comparison CL_PAREN OP_BRACE _statements CL_BRACE;
+
+dowhile ::= DO OP_BRACE _statements CL_BRACE WHILE OP_PAREN comparison CL_PAREN SEMICOLON;
+
+comparison ::= atom comparator atom;
+comparator ::= EQUALS
+    | DIFFERENT
+    | MORE_THAN
+    | MORE_EQUAL_THAN
+    | LESS_THAN
+    | LESS_EQUAL_THAN;
+
+operation ::= //declarar variables, asignar y operaciones matematicas
+    ID ASSIGN term _sum
+    | term _sum;
+_sum ::=
+    PLUS term _sum
+    | MINUS term _sum
+    | ;
+term ::= factor _term;
+_term ::=
+    MULT factor _term
+    | DIV factor _term
+    | ;
+factor ::=
+     PLUS factor
+    | MINUS factor
+    | atom;
+atom ::= ID | STRING | NUMBER;
+
+graph ::= OP_BRACE data_chart CL_BRACE;
+
+data_chart ::=
+      title_x_y_chart COMMA DATA COLON OP_BRACKET bdl_data CL_BRACKET
+    | DATA COLON OP_BRACKET bdl_data CL_BRACKET COMMA title_x_y_chart
+    | DATA COLON OP_BRACKET bdl_data CL_BRACKET
+    | cake_chart COMMA DATA COLON OP_BRACKET cake_data CL_BRACKET
+    | DATA COLON OP_BRACKET cake_data CL_BRACKET COMMA cake_chart
+    | DATA COLON OP_BRACKET cake_data CL_BRACKET
+    | DATA COLON OP_BRACE cards_data CL_BRACE ;
+
+bdl_data ::= bars_data | dots_data | lines_data;
+
+bars_data ::= bar COMMA bars_data
+    | bar ;
+bar ::= OP_BRACE CATEGORY COLON STRING:c COMMA VALUE COLON NUMBER:n opt_color CL_BRACE;
+title_x_y_chart ::= CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA X_AXIS_LBL COLON STRING:xLbl COMMA Y_AXIS_LBL COLON STRING:yLbl CL_BRACE;
+
+cake_data ::= slice COMMA cake_data
+    | slice ;
+slice ::= OP_BRACE LABEL COLON STRING:c COMMA VALUE COLON NUMBER:n opt_color CL_BRACE;
+cake_chart ::= CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA LEGEND_POS COLON STRING:leyend_pos CL_BRACE;
+
+dots_data ::= dot COMMA dots_data
+    | dot;
+dot ::= OP_BRACE X COLON NUMBER:x COMMA Y COLON NUMBER:y opt_size_color CL_BRACE;
+
+lines_data ::= line COMMA lines_data
+    | line;
+line ::= OP_BRACE NAME COLON STRING:n COMMA POINTS COLON OP_BRACKET points CL_BRACKET opt_color_line_style CL_BRACE;
+points ::= point COMMA points
+    | point;
+point ::= OP_BRACE X COLON NUMBER:x COMMA Y COLON NUMBER:y opt_lbl CL_BRACE;
+
+cards_data ::= VALUE COLON NUMBER:n COMMA LABEL COLON STRING:l COMMA DESCRIPTION COLON STRING:d opt_icon_color_link;
+
+
+opt_icon_color_link ::= COMMA ICON COLON STRING:i COMMA COLOR COLON HEX:h COMMA LINK COLON URL:u
+    | ;
+opt_lbl ::= COMMA LABEL COLON STRING:s
+    | ;
+opt_color_line_style ::= COMMA COLOR COLON HEX:h COMMA LINE_STYLE COLON STRING:s
+    | ;
+opt_size_color ::= COMMA SIZE COLON NUMBER:s COMMA COLOR COLON HEX:h
+    | ;
+opt_color ::= COMMA COLOR COLON HEX:h
+    | ;
+
+
+global_info ::= ;
+
+
+
+
