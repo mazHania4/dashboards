@@ -14,7 +14,7 @@ import java_cup.runtime.*;
 whitespace = [ \t]+
 newline = [\n\r]+
 hex = \"#([0-9a-fA-F]{6})\"
-string = \"[^\"]*[\w]+\"
+string = \"[\w \n\r,@%!¡¿?#<>&*+=:;\.\(\)\[\]\{\}\/\|\-\$]+\"
 id = [\w]+
 number = \d*\.?\d*
 link = \"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)\"
@@ -41,12 +41,15 @@ link = \"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(
     "for" { return symbol(ParserSym.FOR); }
     "do" { return symbol(ParserSym.DO); }
     "while" { return symbol(ParserSym.WHILE); }
+    "true" { return symbol(ParserSym.TRUE); }
+    "false" { return symbol(ParserSym.FALSE); }
     //reserved words for graphs and dashboard
     "\"title\""  { return symbol(ParserSym.TITTLE); }
     "\"description\""  { return symbol(ParserSym.DESCRIPTION); }
     "\"keywords\""  { return symbol(ParserSym.KEYWORDS); }
     "\"header\""  { return symbol(ParserSym.HEADER); }
     "\"footer\""  { return symbol(ParserSym.FOOTER); }
+    "\"copyright\""  { return symbol(ParserSym.COPYRIGHT); }
     "\"backgroundColor\""  { return symbol(ParserSym.BG_COLOR); }
     "\"fontFamily\""  { return symbol(ParserSym.FONT_FAM); }
     "\"fontSize\""  { return symbol(ParserSym.FONT_SIZE); }

@@ -1,35 +1,50 @@
 package com.compi1.parsers;
 import java_cup.runtime.*;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.LinkedList;
+import com.compi1.graphs.*;
+import com.compi1.lang.*;
 
 class Parser;
 
 parser code {:
+    private LinkedList<Statement> statements;
+    private Dashboard dashboard;
+    private Interpreter interpreter;
+    private LinkedList<com.compi1.lang.Error> errors;
+    public Dashboard getDashboard(){
+        //execute statements and add the graph list to the dashboard
+        for (Statement s : statements) {
+            interpreter.execute(s, dashboard.getGraphs());
+        }
+        return dashboard;
+    }
+
     public Parser(Lexer lex, ComplexSymbolFactory sf) {
         super(lex,sf);
     }
     public void syntax_error(Symbol cur_token) {
-        throw new Error("Syntax error in token '" +symbl_name_from_id(cur_token.sym) + "':'" + cur_token.value
-        +"' at line: " + cur_token.left + ", col:" + cur_token.right);
+        String msg = "Syntax error in token '" +symbl_name_from_id(cur_token.sym) + "':'" + cur_token.value
+                             +"' at line: " + cur_token.left + ", col:" + cur_token.right;
+        errors.add( new com.compi1.lang.Error(msg, cur_token.left));
     }
 :};
 
 terminal
 // reserved words for control structures
-IF, ELSE, FOR, DO , WHILE,
+IF, ELSE, FOR, DO , WHILE, TRUE, FALSE,
 // reserved words for graphs and dashboard
-TITTLE, DESCRIPTION, KEYWORDS, HEADER, FOOTER, BG_COLOR, FONT_FAM, FONT_SIZE, DATA, CATEGORY, VALUE, LABEL,
+TITTLE, DESCRIPTION, KEYWORDS, HEADER, FOOTER, COPYRIGHT, BG_COLOR, FONT_FAM, FONT_SIZE, DATA, CATEGORY, VALUE, LABEL,
 X, Y, NAME, POINTS, COLOR, SIZE, LINE_STYLE, ICON, LINK, CHART, X_AXIS_LBL, Y_AXIS_LBL, LEGEND_POS,
 // symbols
 COLON, SEMICOLON, COMMA, OP_BRACE, CL_BRACE, OP_BRACKET, CL_BRACKET, OP_PAREN, CL_PAREN,
 PLUS, INCREMENT, MINUS, DECREMENT, MULT, DIV,
-ASSIGN, EQUALS, DIFFERENT, LESS_THAN, LESS_EQUAL_THAN, MORE_THAN, MORE_EQUAL_THAN,
+ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, MULT_ASSIGN, DIV_ASSIGN,
+EQUALS, DIFFERENT, LESS_THAN, LESS_EQUAL_THAN, MORE_THAN, MORE_EQUAL_THAN,
 // values
 STRING, ID, HEX, NUMBER, URL, LEXICAL_ERROR;
 
-nonterminal statements, _statements, statement, global_info, if, opt_else, for, while, dowhile,
-comparison, comparator, operation, atom, _sum, term, _term, factor,
+nonterminal statements, _statements, statement, opt_global_info, _keywords, keywords, if, opt_else, for, while, dowhile,
+bool_val, comparison, comparator, instruction, expression, value, number, as_operator, ar_operator,
 graph, data_chart, bdl_data, opt_color, opt_size_color, opt_color_line_style, opt_lbl, opt_icon_color_link,
     bars_data, title_x_y_chart, bar,  cake_data, cake_chart, slice,
     dots_data, dot,  lines_data, line, point, points,
@@ -37,105 +52,559 @@ graph, data_chart, bdl_data, opt_color, opt_size_color, opt_color_line_style, op
 
 start with statements;
 
-statements ::= statement _statements global_info; //agregar las graficas  e info al resultado global
-_statements ::= statement _statements // devolver listado de graficas
-    | ;
+statements ::=
+    opt_global_info:d statement:s _statements:sList
+        {:
+            statements = (LinkedList<Statement>) sList;
+            statements.addFirst((Statement)s);
+            dashboard = (Dashboard) d;
+        :};
 
-statement ::= operation SEMICOLON // se ejecuta, tipo actualizar tabla de simbolos y devuelve un listado vacio
- // los siguientes devuelven un listado de graficas (puede estar vacio)
-    | graph
-    | if
-    | for
-    | while
-    | dowhile;
+_statements ::=
+    statement:s _statements:sList
+        {:
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statementList.addFirst((Statement)s);
+            RESULT = statementList;
+        :}
+    | //ε
+        {: RESULT = new LinkedList(); :};
 
-if ::= IF OP_PAREN comparison CL_PAREN OP_BRACE _statements CL_BRACE opt_else;
-opt_else ::= ELSE OP_BRACE _statements CL_BRACKET
-    | ;
+statement ::=
+    instruction:i SEMICOLON
+        {:
+            Statement statement = new Statement(StatementType.INSTRUCTION);
+            statement.setInstruction((Instruction)i);
+            RESULT = statement;
+        :}
+    | graph:s
+        {: RESULT = s; :}
+    | if:s
+        {: RESULT = s; :}
+    | for:s
+        {: RESULT = s; :}
+    | while:s
+        {: RESULT = s; :}
+    | dowhile:s
+        {: RESULT = s; :};
 
-for ::= FOR OP_PAREN operation SEMICOLON comparison SEMICOLON operation CL_PAREN OP_BRACE _statements CL_BRACE;
+if ::=
+    IF OP_PAREN bool_val:c CL_PAREN OP_BRACE _statements:sList CL_BRACE opt_else:s
+        {:
+            Statement statement = (Statement) s;
+            statement.setComparison((Comparison)c);
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statement.getStatements().addAll(statementList);
+            RESULT = statement;
+        :};
+opt_else ::=
+    ELSE OP_BRACE _statements:sList CL_BRACKET
+        {:
+            Statement statement = new Statement(StatementType.ELSE);
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statement.getElseStatements().addAll(statementList);
+            RESULT = statement;
+        :}
+    | //ε
+        {: RESULT = new Statement(StatementType.IF); :};
 
-while ::= WHILE OP_PAREN comparison CL_PAREN OP_BRACE _statements CL_BRACE;
+for ::=
+    FOR OP_PAREN instruction:i1 SEMICOLON bool_val:c SEMICOLON instruction:i2 CL_PAREN OP_BRACE _statements:sList CL_BRACE
+        {:
+            Statement statement = new Statement(StatementType.FOR);
+            statement.setInstruction((Instruction)i1);
+            statement.setInstruction2((Instruction)i2);
+            statement.setComparison((Comparison)c);
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statement.getStatements().addAll(statementList);
+            RESULT = statement;
+        :};
 
-dowhile ::= DO OP_BRACE _statements CL_BRACE WHILE OP_PAREN comparison CL_PAREN SEMICOLON;
+while ::=
+    WHILE OP_PAREN bool_val:c CL_PAREN OP_BRACE _statements:sList CL_BRACE
+        {:
+            Statement statement = new Statement(StatementType.WHILE);
+            statement.setComparison((Comparison)c);
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statement.getStatements().addAll(statementList);
+            RESULT = statement;
+        :};
 
-comparison ::= atom comparator atom;
-comparator ::= EQUALS
+dowhile ::=
+    DO OP_BRACE _statements:sList CL_BRACE WHILE OP_PAREN bool_val:c CL_PAREN SEMICOLON
+        {:
+            Statement statement = new Statement(StatementType.DO_WHILE);
+            statement.setComparison((Comparison)c);
+            LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
+            statement.getStatements().addAll(statementList);
+            RESULT = statement;
+        :};
+
+bool_val ::=
+    comparison:c
+        {: RESULT = c; :}
+    | ID:id
+        {:
+            Value val = new Value(ValueType.ID);
+            val.setId((String)id);
+            Comparison comparison = new Comparison(ComparisonType.VALUE);
+            comparison.setValue(val);
+            RESULT = comparison;
+        :}
+    | TRUE
+        {:
+            Value val = new Value(ValueType.TRUE);
+            Comparison comparison = new Comparison(ComparisonType.VALUE);
+            comparison.setValue(val);
+            RESULT = comparison;
+        :}
+    | FALSE
+        {:
+            Value val = new Value(ValueType.FALSE);
+            Comparison comparison = new Comparison(ComparisonType.VALUE);
+            comparison.setValue(val);
+            RESULT = comparison;
+        :};
+
+comparison ::=
+    expression:e1 comparator:c expression:e2
+        {:
+            Comparison comparison = new Comparison(ComparisonType.EXPRESSIONS);
+            comparison.setComparator((Comparator)c);
+            comparison.setExpr1((Expression)e1);
+            comparison.setExpr2((Expression)e2);
+            RESULT = comparison;
+        :}
+    | STRING:s1 comparator:c STRING:s2
+        {:
+            Comparison comparison = new Comparison(ComparisonType.STRINGS);
+            comparison.setString1((String)s1);
+            comparison.setString2((String)s2);
+            comparison.setComparator((Comparator)c);
+            RESULT = comparison;
+        :};
+comparator ::=
+    EQUALS
+        {: RESULT = Comparator.EQUALS; :}
     | DIFFERENT
+        {: RESULT = Comparator.DIFFERENT; :}
     | MORE_THAN
+        {: RESULT = Comparator.MORE_THAN; :}
     | MORE_EQUAL_THAN
+        {: RESULT = Comparator.MORE_EQUAL_THAN; :}
     | LESS_THAN
-    | LESS_EQUAL_THAN;
+        {: RESULT = Comparator.LESS_THAN; :}
+    | LESS_EQUAL_THAN
+        {: RESULT = Comparator.LESS_EQUAL_THAN; :};
 
-operation ::= //declarar variables, asignar y operaciones matematicas
-    ID ASSIGN term _sum
-    | term _sum;
-_sum ::=
-    PLUS term _sum
-    | MINUS term _sum
-    | ;
-term ::= factor _term;
-_term ::=
-    MULT factor _term
-    | DIV factor _term
-    | ;
-factor ::=
-     PLUS factor
-    | MINUS factor
-    | atom;
-atom ::= ID | STRING | NUMBER;
+instruction ::=
+    ID:id ASSIGN expression:e
+        {:
+            Instruction instruction = new Instruction(InstrType.ASSIGN_EXPR, cur_token.left, (String)id);
+            instruction.setOperator(AsOperator.ASSIGN);
+            instruction.setExpression((Expression)e);
+            RESULT = instruction;
+        :}
+    | ID:id as_operator:o expression:e
+        {:
+            Instruction instruction = new Instruction(InstrType.ASSIGN_EXPR, cur_token.left, (String)id);
+            instruction.setOperator((AsOperator)o);
+            instruction.setExpression((Expression)e);
+            RESULT = instruction;
+        :}
+    | ID:id ASSIGN comparison:c
+        {:
+            Instruction instruction = new Instruction(InstrType.ASSIGN_COMPARISON, cur_token.left, (String)id);
+            instruction.setOperator(AsOperator.ASSIGN);
+            instruction.setComparison((Comparison)c);
+            RESULT = instruction;
+        :}
+    | ID:id ASSIGN value:v
+        {:
+            Instruction instruction = new Instruction(InstrType.ASSIGN_VALUE, cur_token.left, (String)id);
+            instruction.setOperator(AsOperator.ASSIGN);
+            instruction.setValue((Value)v);
+            RESULT = instruction;
+        :}
+    | expression // no hace nada
+        {: :}
+    | ID:id DECREMENT
+        {: RESULT = new Instruction(InstrType.DECREMENT, cur_token.left, (String)id); :}
+    | ID:id INCREMENT
+        {: RESULT = new Instruction(InstrType.INCREMENT, cur_token.left, (String)id); :};
 
-graph ::= OP_BRACE data_chart CL_BRACE;
+expression ::=
+    number:v1 ar_operator:o number:v2
+        {:
+            Expression expression = new Expression(false, (Value)v1);
+            expression.setOperator((ArOperator)o);
+            expression.setValue2((Value)v2);
+            RESULT = expression;
+        :}
+    | number:v
+        {: RESULT = new Expression(true, (Value)v); :};
+
+as_operator ::=
+    PLUS_ASSIGN
+        {: RESULT = AsOperator.PLUS_ASSIGN; :}
+    | MINUS_ASSIGN
+        {: RESULT = AsOperator.MINUS_ASSIGN; :}
+    | MULT_ASSIGN
+        {: RESULT = AsOperator.MULT_ASSIGN; :}
+    | DIV_ASSIGN
+        {: RESULT = AsOperator.DIV_ASSIGN; :};
+ar_operator ::=
+    PLUS
+        {: RESULT = ArOperator.PLUS; :}
+    | MINUS
+        {: RESULT = ArOperator.MINUS; :}
+    | DIV
+        {: RESULT = ArOperator.DIV; :}
+    | MULT
+        {: RESULT = ArOperator.MULT; :};
+
+value ::=
+    STRING:s
+        {:
+            Value value = new Value(ValueType.STRING);
+            value.setString((String)s);
+            RESULT = value;
+        :}
+    | TRUE
+        {: RESULT = new Value(ValueType.TRUE); :}
+    | FALSE
+        {: RESULT = new Value(ValueType.FALSE); :};
+number ::=
+    MINUS NUMBER:n
+        {:
+            Value value = new Value(ValueType.NUMBER);
+            value.setNumber( Double.parseDouble( (String)n ) * -1);
+            RESULT = value;
+        :}
+    | NUMBER:n
+        {:
+            Value value = new Value(ValueType.NUMBER);
+            value.setNumber( Double.parseDouble( (String)n ) );
+            RESULT = value;
+        :}
+    | ID:id
+        {:
+            Value value = new Value(ValueType.ID);
+            value.setId( (String) id );
+            RESULT = value;
+        :};
+
+graph ::=
+    OP_BRACE data_chart:g CL_BRACE
+        {:
+            Statement statement = new Statement(StatementType.GRAPH);
+            statement.setGraph((Graph)g);
+            RESULT = statement;
+        :};
 
 data_chart ::=
-      title_x_y_chart COMMA DATA COLON OP_BRACKET bdl_data CL_BRACKET
-    | DATA COLON OP_BRACKET bdl_data CL_BRACKET COMMA title_x_y_chart
-    | DATA COLON OP_BRACKET bdl_data CL_BRACKET
-    | cake_chart COMMA DATA COLON OP_BRACKET cake_data CL_BRACKET
-    | DATA COLON OP_BRACKET cake_data CL_BRACKET COMMA cake_chart
-    | DATA COLON OP_BRACKET cake_data CL_BRACKET
-    | DATA COLON OP_BRACE cards_data CL_BRACE ;
+    title_x_y_chart:i COMMA DATA COLON OP_BRACKET bdl_data:g CL_BRACKET
+        {:
+            Graph graph = (Graph) g;
+            graph.setInfo((Info)i);
+            RESULT = graph;
+        :}
+    | DATA COLON OP_BRACKET bdl_data:g CL_BRACKET COMMA title_x_y_chart:i
+        {:
+            Graph graph = (Graph) g;
+            graph.setInfo((Info)i);
+            RESULT = graph;
+        :}
+    | DATA COLON OP_BRACKET bdl_data:g CL_BRACKET
+        {: RESULT = g; :}
+    | cake_chart:i COMMA DATA COLON OP_BRACKET cake_data:g CL_BRACKET
+        {:
+            Graph graph = (Graph) g;
+            graph.setInfo((Info)i);
+            RESULT = graph;
+        :}
+    | DATA COLON OP_BRACKET cake_data:d CL_BRACKET COMMA cake_chart:i
+        {:
+            Graph graph = new Graph(GraphType.CAKE);
+            graph.getData().addAll((LinkedList<Element>)d);
+            graph.setInfo((Info)i);
+            RESULT = graph;
+        :}
+    | DATA COLON OP_BRACKET cake_data:d CL_BRACKET
+        {:
+            Graph graph = new Graph(GraphType.CAKE);
+            graph.getData().addAll((LinkedList<Element>)d);
+            RESULT = graph;
+        :}
+    | DATA COLON OP_BRACE cards_data:g CL_BRACE
+        {: RESULT = g; :};
 
-bdl_data ::= bars_data | dots_data | lines_data;
+bdl_data ::=
+    bars_data:d
+        {:
+            Graph graph = new Graph(GraphType.BARS);
+            graph.getData().addAll((LinkedList<Element>)d);
+            RESULT = graph;
+        :}
+    | dots_data:d
+        {:
+            Graph graph = new Graph(GraphType.DOTS);
+            graph.getData().addAll((LinkedList<Element>)d);
+            RESULT = graph;
+        :}
+    | lines_data:d
+        {:
+            Graph graph = new Graph(GraphType.LINES);
+            graph.getLines().addAll((LinkedList<Line>)d);
+            RESULT = graph;
+        :};
 
-bars_data ::= bar COMMA bars_data
-    | bar ;
-bar ::= OP_BRACE CATEGORY COLON STRING:c COMMA VALUE COLON NUMBER:n opt_color CL_BRACE;
-title_x_y_chart ::= CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA X_AXIS_LBL COLON STRING:xLbl COMMA Y_AXIS_LBL COLON STRING:yLbl CL_BRACE;
+bars_data ::=
+    bar:b COMMA bars_data:bList
+        {:
+            LinkedList<Element> array = (LinkedList<Element>) bList;
+            array.addFirst((Element)b);
+            RESULT = array;
+        :}
+    | bar:b
+        {:
+            LinkedList<Element> array = new LinkedList();
+            array.add((Element)b);
+            RESULT = array;
+        :};
+bar ::=
+    OP_BRACE CATEGORY COLON STRING:x COMMA VALUE COLON expression:n opt_color:col CL_BRACE
+        {:
+            try{
+                double y = interpreter.getExprResult((Expression)n);
+                Element bar = new Element((String)x, y);
+                bar.setColor((String)col);
+                RESULT = bar;
+            }catch (RuntimeException e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                RESULT = new Element("error", 0);
+            }
+        :};
 
-cake_data ::= slice COMMA cake_data
-    | slice ;
-slice ::= OP_BRACE LABEL COLON STRING:c COMMA VALUE COLON NUMBER:n opt_color CL_BRACE;
-cake_chart ::= CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA LEGEND_POS COLON STRING:leyend_pos CL_BRACE;
+title_x_y_chart ::=
+    CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA X_AXIS_LBL COLON STRING:xLbl COMMA Y_AXIS_LBL COLON STRING:yLbl CL_BRACE
+        {: RESULT = new Info((String)t, (String)xLbl, (String)yLbl, "center"); :};
 
-dots_data ::= dot COMMA dots_data
-    | dot;
-dot ::= OP_BRACE X COLON NUMBER:x COMMA Y COLON NUMBER:y opt_size_color CL_BRACE;
+cake_data ::=
+    slice:s COMMA cake_data:sList
+        {:
+            LinkedList<Element> array = (LinkedList<Element>) sList;
+            array.addFirst((Element)s);
+            RESULT = array;
+        :}
+    | slice:s
+        {:
+            LinkedList<Element> array = new LinkedList();
+            array.add((Element)s);
+            RESULT = array;
+        :};
+slice ::=
+    OP_BRACE LABEL COLON STRING:x COMMA VALUE COLON expression:n opt_color:col CL_BRACE
+        {:
+            try{
+                double y = interpreter.getExprResult((Expression)n);
+                Element slice = new Element((String)x, y);
+                slice.setColor((String)col);
+                RESULT = slice;
+            }catch (RuntimeException e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                RESULT = new Element("error", 0);
+            }
+        :};
+cake_chart ::=
+    CHART COLON OP_BRACE TITTLE COLON STRING:t COMMA LEGEND_POS COLON STRING:lp CL_BRACE
+        {: RESULT = new Info((String)t, "X axis", "Y axis", (String)lp); :};
 
-lines_data ::= line COMMA lines_data
-    | line;
-line ::= OP_BRACE NAME COLON STRING:n COMMA POINTS COLON OP_BRACKET points CL_BRACKET opt_color_line_style CL_BRACE;
-points ::= point COMMA points
-    | point;
-point ::= OP_BRACE X COLON NUMBER:x COMMA Y COLON NUMBER:y opt_lbl CL_BRACE;
+dots_data ::= dot:d COMMA dots_data:dList
+        {:
+            LinkedList<Element> array = (LinkedList<Element>) dList;
+            array.addFirst((Element)d);
+            RESULT = array;
+        :}
+    | dot:d
+        {:
+            LinkedList<Element> array = new LinkedList();
+            array.add((Element)d);
+            RESULT = array;
+        :};
+dot ::=
+    OP_BRACE X COLON expression:xe COMMA Y COLON expression:ye opt_size_color:a CL_BRACE
+        {:
+            try{
+                double x = interpreter.getExprResult((Expression)xe);
+                double y = interpreter.getExprResult((Expression)ye);
+                Element dot = new Element(String.valueOf(x), y);
+                String[] size_color = (String[]) a;
+                dot.setColor(size_color[1]);
+                dot.setSize(size_color[0]);
+                dot.setColor(size_color[1]);
+                RESULT = dot;
+            }catch (Exception e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                RESULT = new Element("error", 0);
+            }
+        :};
 
-cards_data ::= VALUE COLON NUMBER:n COMMA LABEL COLON STRING:l COMMA DESCRIPTION COLON STRING:d opt_icon_color_link;
+lines_data ::=
+    line:l COMMA lines_data:lList
+        {:
+            LinkedList<Line> array = (LinkedList<Line>) lList;
+            array.addFirst((Line)l);
+            RESULT = array;
+        :}
+    | line:l
+        {:
+            LinkedList<Line> array = new LinkedList();
+            array.add((Line)l);
+            RESULT = array;
+        :};
+line ::=
+    OP_BRACE NAME COLON STRING:n COMMA POINTS COLON OP_BRACKET points:p CL_BRACKET opt_color_line_style:a CL_BRACE
+        {:
+            String[] color_line = (String[]) a;
+            Line line = new Line(color_line[0], color_line[1]);
+            line.getPoints().addAll((LinkedList<Element>)p);
+            RESULT = line;
+        :};
+points ::=
+    point:p COMMA points:pList
+        {:
+            LinkedList<Element> array = (LinkedList) pList;
+            array.addFirst((Element)p);
+            RESULT = array;
+        :}
+    | point:p
+        {:
+            LinkedList<Element> array = new LinkedList();
+            array.add((Element)p);
+            RESULT = array;
+        :};
+point ::=
+    OP_BRACE X COLON expression:xe COMMA Y COLON expression:ye opt_lbl:lbl CL_BRACE
+        {:
+            try{
+                double x = interpreter.getExprResult((Expression)xe);
+                double y = interpreter.getExprResult((Expression)ye);
+                Element dot = new Element(String.valueOf(x), y);
+                dot.setLabel((String)lbl);
+                RESULT = dot;
+            }catch (Exception e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                RESULT = new Element("error", 0);
+            }
+        :};
+
+cards_data ::=
+    VALUE COLON expression:n COMMA LABEL COLON STRING:x COMMA DESCRIPTION COLON STRING:d opt_icon_color_link:a
+        {:
+            try{
+                double y = interpreter.getExprResult((Expression)n);
+                Element card = new Element(String.valueOf(x), y);
+                String[] icl = (String[]) a;
+                card.setIcon((String)icl[0]);
+                card.setColor((String)icl[1]);
+                card.setLink((String)icl[2]);
+                Graph graph = new Graph(GraphType.CARD);
+                graph.setElement(card);
+                RESULT = graph;
+            }catch (Exception e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                RESULT = new Element("error", 0);
+            }
+        :};
 
 
-opt_icon_color_link ::= COMMA ICON COLON STRING:i COMMA COLOR COLON HEX:h COMMA LINK COLON URL:u
-    | ;
-opt_lbl ::= COMMA LABEL COLON STRING:s
-    | ;
-opt_color_line_style ::= COMMA COLOR COLON HEX:h COMMA LINE_STYLE COLON STRING:s
-    | ;
-opt_size_color ::= COMMA SIZE COLON NUMBER:s COMMA COLOR COLON HEX:h
-    | ;
-opt_color ::= COMMA COLOR COLON HEX:h
-    | ;
+opt_icon_color_link ::=
+    COMMA ICON COLON STRING:i COMMA COLOR COLON HEX:h COMMA LINK COLON URL:u
+        {:
+            String[] array = new String[3];
+            array[0] = (String) i;
+            array[1] = (String) h;
+            array[2] = (String) u;
+            RESULT = array;
+        :}
+    | //ε
+        {:
+            String[] array = {" ", "#1b1c1b", " "};
+            RESULT = array;
+        :};
+opt_lbl ::=
+    COMMA LABEL COLON STRING:s
+        {: RESULT = s; :}
+    | //ε
+        {: RESULT = " "; :};
+opt_color_line_style ::=
+    COMMA COLOR COLON HEX:h COMMA LINE_STYLE COLON STRING:s
+        {:
+            String[] array = new String[2];
+            array[0] = (String) h;
+            array[1] = (String) s;
+            RESULT = array;
+        :}
+    | //ε
+        {:
+            String[] array = {" ", "#1b1c1b", " "};
+            RESULT = array;
+        :};
+opt_size_color ::=
+    COMMA SIZE COLON expression:s COMMA COLOR COLON HEX:h
+        {:
+            try{
+                double size = interpreter.getExprResult((Expression)s);
+                String[] array = new String[2];
+                array[0] = (String) h;
+                array[1] = String.valueOf(size);
+                RESULT = array;
+            }catch (Exception e){
+                errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));
+                String[] array = {"5", "#1b1c1b"};
+                RESULT = array;
+            }
+        :}
+    | //ε
+        {:
+            String[] array = {"5", "#1b1c1b"};
+            RESULT = array;
+        :};
+opt_color ::=
+    COMMA COLOR COLON HEX:h
+        {: RESULT = h; :}
+    | //ε
+        {: RESULT = " "; :};
 
+opt_global_info ::=
+    TITTLE COLON STRING:t COMMA DESCRIPTION COLON STRING:d COMMA KEYWORDS COLON keywords:k COMMA
+    HEADER COLON OP_BRACE TITTLE COLON STRING:ht CL_BRACE COMMA
+    FOOTER COLON OP_BRACE COPYRIGHT COLON STRING:c CL_BRACE COMMA
+    BG_COLOR COLON HEX:bg COMMA FONT_FAM COLON STRING:ff COMMA FONT_SIZE COLON STRING:fs
+        {:
+            LinkedList<String> keywords = (LinkedList<String>) k;
+            RESULT = new Dashboard((String)t, (String)d, keywords, (String)ht, (String)c, (String)bg, (String)ff, (String)fs);
 
-global_info ::= ;
+        :}
+    | //ε
+        {:
+            RESULT = new Dashboard("title", "-", new LinkedList(), "header", "footer", "#bcceeb", "Arial, sans-serif", "10px");
+        :};
 
-
-
-
+keywords ::=
+    KEYWORDS COLON OP_BRACKET STRING:s _keywords:sList CL_BRACKET
+        {:
+            LinkedList<String> array = (LinkedList<String>) sList;
+            array.addFirst((String)s);
+            RESULT = array;
+        :};
+_keywords ::=
+    COMMA STRING:s _keywords:sList
+        {:
+            LinkedList<String> array = (LinkedList<String>) sList;
+            array.addFirst((String)s);
+            RESULT = array;
+        :}
+    | //ε
+        {: RESULT = new LinkedList(); :};
