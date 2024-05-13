@@ -5,7 +5,7 @@ class Graph(
 ) {
     val data: ArrayList<Element> = ArrayList() // for bars, cake and dots
     val lines: ArrayList<Line> = ArrayList() // for lines
-    var element: Element = Element("", 0) // for card
+    var element: Element = Element("", 0.0) // for card
     var info: Info = Info("Tittle", "X axis", "Y axis", "center")
 }
 

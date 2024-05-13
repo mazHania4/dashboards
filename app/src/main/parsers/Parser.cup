@@ -11,7 +11,7 @@ parser code {:
     private Dashboard dashboard;
     private Interpreter interpreter;
     private LinkedList<com.compi1.lang.Error> errors;
-    public Dashboard getDashboard(){
+    public Dashboard getDashboard(){ //surround with try-catch when calling because of the possible execution errors
         //execute statements and add the graph list to the dashboard
         for (Statement s : statements) {
             interpreter.execute(s, dashboard.getGraphs());
@@ -22,7 +22,7 @@ parser code {:
     public Parser(Lexer lex, ComplexSymbolFactory sf) {
         super(lex,sf);
     }
-    public void syntax_error(Symbol cur_token) {
+    public void syntax_error(java_cup.runtime.Symbol cur_token) {
         String msg = "Syntax error in token '" +symbl_name_from_id(cur_token.sym) + "':'" + cur_token.value
                              +"' at line: " + cur_token.left + ", col:" + cur_token.right;
         errors.add( new com.compi1.lang.Error(msg, cur_token.left));
@@ -175,12 +175,20 @@ comparison ::=
             comparison.setExpr2((Expression)e2);
             RESULT = comparison;
         :}
-    | STRING:s1 comparator:c STRING:s2
+    | STRING:s1 EQUALS STRING:s2
         {:
             Comparison comparison = new Comparison(ComparisonType.STRINGS);
             comparison.setString1((String)s1);
             comparison.setString2((String)s2);
-            comparison.setComparator((Comparator)c);
+            comparison.setComparator(Comparator.EQUALS);
+            RESULT = comparison;
+        :}
+    | STRING:s1 DIFFERENT STRING:s2
+        {:
+            Comparison comparison = new Comparison(ComparisonType.STRINGS);
+            comparison.setString1((String)s1);
+            comparison.setString2((String)s2);
+            comparison.setComparator(Comparator.DIFFERENT);
             RESULT = comparison;
         :};
 comparator ::=

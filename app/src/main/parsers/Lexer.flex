@@ -87,6 +87,10 @@ link = \"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(
     "*" { return symbol(ParserSym.MULT); }
     "/" { return symbol(ParserSym.DIV); }
     "=" { return symbol(ParserSym.ASSIGN); }
+    "+=" { return symbol(ParserSym.PLUS_ASSIGN); }
+    "-=" { return symbol(ParserSym.MINUS_ASSIGN); }
+    "*=" { return symbol(ParserSym.MULT_ASSIGN); }
+    "/=" { return symbol(ParserSym.DIV_ASSIGN); }
     "==" { return symbol(ParserSym.EQUALS); }
     "!=" { return symbol(ParserSym.DIFFERENT); }
     "<" { return symbol(ParserSym.LESS_THAN); }
