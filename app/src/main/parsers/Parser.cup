@@ -21,6 +21,8 @@ parser code {:
 
     public Parser(Lexer lex, ComplexSymbolFactory sf) {
         super(lex,sf);
+        interpreter = new Interpreter();
+        errors = new LinkedList();
     }
     public void syntax_error(java_cup.runtime.Symbol cur_token) {
         String msg = "Syntax error in token '" +symbl_name_from_id(cur_token.sym) + "':'" + cur_token.value
