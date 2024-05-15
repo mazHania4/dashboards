@@ -56,13 +56,13 @@ class HTMLGenerator {
         return buildString {
             append("\n<div><canvas id=\"$name\" width=\"700\" height=\"300\"></canvas></div>")
             append("\n<script>")
-            append("\n const xValues = [$xValues];")
-            append("\n const yValues = [$yValues];")
-            append("\n const colors = [$colors];")
-            append("\n const data = { \n labels: xValues, \n datasets:[{ data: yValues, backgroundColor: colors }] };")
-            append("\n const config = { type:'bar', data:data, options:{${options}} };")
-            append("\nlet ctx = document.getElementById('$name').getContext('2d');")
-            append("\nlet $name = new Chart(ctx, config);")
+            append("\n const xValues_$name = [$xValues];")
+            append("\n const yValues_$name = [$yValues];")
+            append("\n const colors_$name = [$colors];")
+            append("\n const data_$name = { \n labels: xValues_$name, \n datasets:[{ data: yValues_$name, backgroundColor: colors_$name }] };")
+            append("\n const config_$name = { type:'bar', data:data_$name, options:{${options}} };")
+            append("\nlet ctx_$name = document.getElementById('$name').getContext('2d');")
+            append("\nlet $name = new Chart(ctx_$name, config_$name);")
             append("\n</script>")
         }
     }
@@ -81,13 +81,13 @@ class HTMLGenerator {
         return buildString {
             append("\n<div><canvas id=\"$name\" width=\"700\" height=\"500\"></canvas></div>")
             append("\n<script>")
-            append("\n const labels = [$xValues];")
-            append("\n const values = [$yValues];")
-            append("\n const colors = [$colors];")
-            append("\n const data = { \n labels: labels, \n datasets:[{ data: values, backgroundColor: colors }] };")
-            append("\n const config = { type:'doughnut', data:data, options:{${options}} };")
-            append("\nlet ctx = document.getElementById('$name').getContext('2d');")
-            append("\nlet $name = new Chart(ctx, config);")
+            append("\n const labels_$name = [$xValues];")
+            append("\n const values_$name = [$yValues];")
+            append("\n const colors_$name = [$colors];")
+            append("\n const data_$name = { \n labels: labels_$name, \n datasets:[{ data: values_$name, backgroundColor: colors_$name }] };")
+            append("\n const config_$name = { type:'doughnut', data:data_$name, options:{${options}} };")
+            append("\nlet ctx_$name = document.getElementById('$name').getContext('2d');")
+            append("\nlet $name = new Chart(ctx_$name, config_$name);")
             append("\n</script>")
         }
     }
@@ -109,13 +109,13 @@ class HTMLGenerator {
         return buildString {
             append("\n<div><canvas id=\"$name\" width=\"700\" height=\"300\"></canvas></div>")
             append("\n<script>")
-            append("\n const values = [$data];")
-            append("\n const point_sizes = [$points];")
-            append("\n const colors = [$colors];")
-            append("\n const data = { \n datasets:[{ data:values, pointRadius:point_sizes, pointBackgroundColor:colors }] };")
-            append("\n const config = { type:'scatter', data:data, options:{${options}} };")
-            append("\nlet ctx = document.getElementById('$name').getContext('2d');")
-            append("\nlet $name = new Chart(ctx, config);")
+            append("\n const values_$name = [$data];")
+            append("\n const point_sizes_$name = [$points];")
+            append("\n const colors_$name = [$colors];")
+            append("\n const data_$name = { \n datasets:[{ data:values_$name, pointRadius:point_sizes_$name, pointBackgroundColor:colors_$name }] };")
+            append("\n const config_$name = { type:'scatter', data:data_$name, options:{${options}} };")
+            append("\nlet ctx_$name = document.getElementById('$name').getContext('2d');")
+            append("\nlet $name = new Chart(ctx_$name, config_$name);")
             append("\n</script>")
         }
     }
@@ -141,10 +141,10 @@ class HTMLGenerator {
         return buildString {
             append("\n<div><canvas id=\"$name\" width=\"700\" height=\"300\"></canvas></div>")
             append("\n<script>")
-            append("\n const xValues = [$xValues];")
-            append("\n const config = { type:'line', \ndata:{labels: xValues, datasets: [$datasets]}, options:{${options}} };")
-            append("\nlet ctx = document.getElementById('$name').getContext('2d');")
-            append("\nlet $name = new Chart(ctx, config);")
+            append("\n const xValues_$name = [$xValues];")
+            append("\n const config_$name = { type:'line', \ndata:{labels: xValues_$name, datasets: [$datasets]}, options:{${options}} };")
+            append("\nlet ctx_$name = document.getElementById('$name').getContext('2d');")
+            append("\nlet $name = new Chart(ctx_$name, config_$name);")
             append("\n</script>")
         }
     }

@@ -107,7 +107,7 @@ if ::=
             RESULT = statement;
         :};
 opt_else ::=
-    ELSE OP_BRACE _statements:sList CL_BRACKET
+    ELSE OP_BRACE _statements:sList CL_BRACE
         {:
             Statement statement = new Statement(StatementType.ELSE);
             LinkedList<Statement> statementList = (LinkedList<Statement>) sList;
@@ -575,8 +575,8 @@ opt_size_color ::=
             try{
                 double size = interpreter.getExprResult((Expression)s);
                 String[] array = new String[2];
-                array[0] = (String) h;
-                array[1] = String.valueOf(size);
+                array[0] = String.valueOf(size);
+                array[1] = (String) h;
                 RESULT = array;
             }catch (Exception e){
                 errors.add(new com.compi1.lang.Error(e.getMessage(), cur_token.left));

@@ -99,7 +99,7 @@ class FilePagerAdapter(private val context: MainActivity) : RecyclerView.Adapter
         }
 
         private fun colorText(editText: EditText, text: String, wordsToColor: List<String>, color:Int) {
-            val tokens = text.split("\\s+".toRegex())
+            val tokens = text.split(" ", "\n", "\t", ";", ",", ":")
             var startIndex = 0
             for (token in tokens) {
                 val endIndex = startIndex + token.length

@@ -90,7 +90,7 @@ class MainActivity : Activity() {
                     outputStream.write(content.toByteArray())
                 }
                 Toast.makeText(this, "html guardado correctamente", Toast.LENGTH_SHORT).show()
-                exportPdf()
+                //exportPdf()
             }
         }
     }
