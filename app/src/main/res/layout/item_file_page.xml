@@ -12,8 +12,10 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="end"
+            android:paddingTop="10dp"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
+            android:textSize="12dp"
             android:textAppearance="?android:attr/textAppearanceSmall"
         />
         <HorizontalScrollView
@@ -28,6 +30,8 @@
                 android:inputType="text|textMultiLine"
                 android:gravity="top|start"
                 android:scrollHorizontally="true"
+                android:textSize="12dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
             />
         </HorizontalScrollView>
     </LinearLayout>

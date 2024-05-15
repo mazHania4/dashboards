@@ -18,9 +18,11 @@ parser code {:
         }
         return dashboard;
     }
-
-    public Parser(Lexer lex, ComplexSymbolFactory sf) {
-        super(lex,sf);
+    public LinkedList<com.compi1.lang.Error> getErrors(){
+        return errors;
+    }
+    public Parser(Lexer lex) {
+        super(lex);
         interpreter = new Interpreter();
         errors = new LinkedList();
     }
@@ -88,7 +90,12 @@ statement ::=
     | while:s
         {: RESULT = s; :}
     | dowhile:s
-        {: RESULT = s; :};
+        {: RESULT = s; :}
+    | error:e
+        {:
+            errors.add(new com.compi1.lang.Error("Wrong Statement", cur_token.left));
+            RESULT = new Statement(StatementType.ERROR);
+        :};
 
 if ::=
     IF OP_PAREN bool_val:c CL_PAREN OP_BRACE _statements:sList CL_BRACE opt_else:s
@@ -477,7 +484,7 @@ line ::=
     OP_BRACE NAME COLON STRING:n COMMA POINTS COLON OP_BRACKET points:p CL_BRACKET opt_color_line_style:a CL_BRACE
         {:
             String[] color_line = (String[]) a;
-            Line line = new Line(color_line[0], color_line[1]);
+            Line line = new Line(color_line[0], color_line[1], (String)n);
             line.getPoints().addAll((LinkedList<Element>)p);
             RESULT = line;
         :};
@@ -515,6 +522,7 @@ cards_data ::=
             try{
                 double y = interpreter.getExprResult((Expression)n);
                 Element card = new Element(String.valueOf(x), y);
+                card.setLabel((String)d);
                 String[] icl = (String[]) a;
                 card.setIcon((String)icl[0]);
                 card.setColor((String)icl[1]);

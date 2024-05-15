@@ -7,6 +7,10 @@ class Graph(
     val lines: ArrayList<Line> = ArrayList() // for lines
     var element: Element = Element("", 0.0) // for card
     var info: Info = Info("Tittle", "X axis", "Y axis", "center")
+    override fun toString(): String {
+        return "Graph(type=$type, data=$data, lines=$lines, element=$element, info=$info)"
+    }
+
 }
 
 class Info(
@@ -29,7 +33,8 @@ class Element (
 
 class Line (
     val color: String,
-    val lineStyle: String
+    val lineStyle: String,
+    val name: String
 ) {
     val points: ArrayList<Element> = ArrayList()
 }

@@ -13,4 +13,4 @@ class Statement (
     val elseStatements: ArrayList<Statement> = ArrayList();
 }
 
-enum class StatementType { INSTRUCTION, IF, ELSE, FOR, WHILE, DO_WHILE, GRAPH }
+enum class StatementType { INSTRUCTION, IF, ELSE, FOR, WHILE, DO_WHILE, GRAPH, ERROR }

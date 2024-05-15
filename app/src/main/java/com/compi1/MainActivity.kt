@@ -3,20 +3,21 @@ package com.compi1
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.pdf.PdfDocument
 import android.os.Bundle
+import android.os.Environment
+import android.view.View
+import android.webkit.WebView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.viewpager2.widget.ViewPager2
 import com.compi1.ui.FilePagerAdapter
-import com.compi1.ui.Panel
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import java.io.File
 import java.io.FileOutputStream
-import java.io.OutputStreamWriter
+import java.io.IOException
 
 class MainActivity : Activity() {
 
@@ -62,6 +63,7 @@ class MainActivity : Activity() {
         content = c
     }
     companion object {
+        val PICK_FOLDER_WRITE_CODE = 100
         val PICK_FILE_WRITE_CODE = 101
         val PICK_FILE_READ_CODE = 102
     }
@@ -81,7 +83,41 @@ class MainActivity : Activity() {
                 Toast.makeText(this, "Archivo guardado correctamente", Toast.LENGTH_SHORT).show()
             }
         }
+        if (requestCode == PICK_FOLDER_WRITE_CODE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            if (uri.scheme == "content") {
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(content.toByteArray())
+                }
+                Toast.makeText(this, "html guardado correctamente", Toast.LENGTH_SHORT).show()
+                exportPdf()
+            }
+        }
     }
+     private fun exportPdf(){
+         val webView = WebView(this)
+         webView.settings.javaScriptEnabled = true
+         webView.loadDataWithBaseURL(null, content, "text/html", "UTF-8", null)
+         webView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+         webView.layout(0, 0, webView.measuredWidth, webView.measuredHeight)
+         val bitmap = Bitmap.createBitmap(webView.measuredWidth, webView.measuredHeight, Bitmap.Config.ARGB_8888)
+         val canvas = Canvas(bitmap)
+         webView.draw(canvas)
+         val document = PdfDocument()
+         val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, 1).create()
+         val page = document.startPage(pageInfo)
+         val pdfCanvas = page.canvas
+         pdfCanvas.drawBitmap(bitmap, 0f, 0f, null)
+         document.finishPage(page)
+         val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dashboard.pdf")
+         try {
+             document.writeTo(FileOutputStream(file))
+         } catch (e: IOException) {
+             e.printStackTrace()
+         }
+         document.close()
+         Toast.makeText(this, "pdf guardado correctamente", Toast.LENGTH_SHORT).show()
+     }
 
     private fun pickExistingFile() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)

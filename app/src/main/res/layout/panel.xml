@@ -29,11 +29,16 @@
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/textView"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:text="Console" />
+        android:layout_height="120dp">
+        <TextView
+            android:id="@+id/console"
+            android:textSize="14dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=":)" />
+    </ScrollView>
 
 
 </LinearLayout>

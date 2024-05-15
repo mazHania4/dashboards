@@ -18,6 +18,7 @@ class Interpreter {
             }
             StatementType.WHILE -> executeWhile(s, graphs)
             StatementType.DO_WHILE -> executeDoWhile(s, graphs)
+            StatementType.ERROR -> {}
         }
     }
 

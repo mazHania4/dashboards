@@ -50,5 +50,4 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     // https://mvnrepository.com/artifact/com.github.vbmacher/java-cup-runtime
     implementation("com.github.vbmacher:java-cup-runtime:11b")
-
 }
