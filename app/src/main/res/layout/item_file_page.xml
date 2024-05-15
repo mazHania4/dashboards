@@ -21,7 +21,8 @@
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:background="#272b33">
 
             <EditText
                 android:id="@+id/editText"
@@ -31,6 +32,7 @@
                 android:gravity="top|start"
                 android:scrollHorizontally="true"
                 android:textSize="12dp"
+                android:textColor="#d5dce8"
                 android:textAppearance="?android:attr/textAppearanceSmall"
             />
         </HorizontalScrollView>

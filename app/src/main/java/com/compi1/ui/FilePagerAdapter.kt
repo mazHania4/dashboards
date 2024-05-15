@@ -1,5 +1,6 @@
 package com.compi1.ui
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.net.Uri
 import android.provider.MediaStore
 import android.text.Editable
@@ -75,11 +76,43 @@ class FilePagerAdapter(private val context: MainActivity) : RecyclerView.Adapter
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     updateChangedText()
+                    matchText(editText, editText.text.toString())
                 }
             })
             panel = Panel(context, File("File", ""), panelLayout)
             panelLayout.removeAllViews()
             panelLayout.addView(panel.view)
+        }
+
+        private fun matchText(editText: EditText, text: String){
+            val keywords = listOf("if", "else", "do", "while", "for")
+            val logicOperators = listOf("==", "!=", "<", ">", "<=", ">=")
+            val grouping = listOf("(", ")", "{", "}", "[", "]")
+            val graphs = listOf("\"title\"", "\"description\"", "\"keywords\"", "\"header\"", "\"footer\"", "\"lineStyle\"",
+                "\"copyright\"", "\"backgroundColor\"", "\"fontFamily\"", "\"fontSize\"", "\"data\"", "\"category\"",
+                "\"value\"", "\"label\"", "\"x\"", "\"y\"", "\"name\"", "\"points\"", "\"color\"", "\"size\"",
+                "\"icon\"", "\"link\"", "\"chart\"", "\"xAxisLabel\"", "\"yAxisLabel\"", "\"legendPosition\""  )
+            colorText( editText, text, keywords, Color.YELLOW)
+            colorText( editText, text, logicOperators, Color.CYAN)
+            colorText( editText, text, grouping, Color.MAGENTA)
+            colorText( editText, text, graphs, Color.rgb(222, 147, 55))
+        }
+
+        private fun colorText(editText: EditText, text: String, wordsToColor: List<String>, color:Int) {
+            val tokens = text.split("\\s+".toRegex())
+            var startIndex = 0
+            for (token in tokens) {
+                val endIndex = startIndex + token.length
+                if (wordsToColor.contains(token.toLowerCase())) {
+                    editText.text.setSpan(
+                        android.text.style.ForegroundColorSpan(color),
+                        startIndex,
+                        endIndex,
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+                startIndex = endIndex + 1
+            }
         }
 
         fun bind(file: File) {
